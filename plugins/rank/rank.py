@@ -37,20 +37,12 @@ user_data = {}
 today = {}
 
 # Watcher for today's messages
-@app.on_message(filters.group & filters.group, group=6)
+@app.on_message(filters.group, group=6)
 def today_watcher(_, message):
     try:
-        chat_id = message.chat.id
-        user_id = message.from_user.id
-        if chat_id in today and user_id in today[chat_id]:
-            today[chat_id][user_id]["total_messages"] += 1
-        else:
-            if chat_id not in today:
-                today[chat_id] = {}
-            if user_id not in today[chat_id]:
-                today[chat_id][user_id] = {"total_messages": 1}
-            else:
-                today[chat_id][user_id]["total_messages"] = 1
+        chat_id, user_id = message.chat.id, message.from_user.id
+        today.setdefault(chat_id, {}).setdefault(user_id, {"total_messages": 0})
+        today[chat_id][user_id]["total_messages"] += 1
     except Exception as e:
         logger.error(f"Error in today_watcher: {e}")
 
