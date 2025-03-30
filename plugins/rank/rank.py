@@ -36,26 +36,40 @@ except Exception as e:
 user_data = {}
 today = {}
 
-# Watcher for today's messages
-@app.on_message(filters.group, group=6)
+@app.on_message(filters.group & filters.group, group=6)
 def today_watcher(_, message):
     try:
-        chat_id, user_id = message.chat.id, message.from_user.id
-        today.setdefault(chat_id, {}).setdefault(user_id, {"total_messages": 0})
-        today[chat_id][user_id]["total_messages"] += 1
+        if not message.from_user:  # Ensure from_user exists
+            return
+        
+        chat_id = message.chat.id
+        user_id = message.from_user.id
+
+        if chat_id in today and user_id in today[chat_id]:
+            today[chat_id][user_id]["total_messages"] += 1
+        else:
+            if chat_id not in today:
+                today[chat_id] = {}
+            today[chat_id][user_id] = {"total_messages": 1}
+
     except Exception as e:
         logger.error(f"Error in today_watcher: {e}")
 
-# Watcher for overall messages
+
 @app.on_message(filters.group & filters.group, group=11)
 def _watcher(_, message):
     try:
+        if not message.from_user:  # Ensure from_user exists
+            return
+        
         user_id = message.from_user.id    
         user_data.setdefault(user_id, {}).setdefault("total_messages", 0)
         user_data[user_id]["total_messages"] += 1    
         rankdb.update_one({"_id": user_id}, {"$inc": {"total_messages": 1}}, upsert=True)
+
     except Exception as e:
         logger.error(f"Error in _watcher: {e}")
+
 
 # Function to generate a horizontal bar chart
 def generate_horizontal_bar_chart(data, title):
